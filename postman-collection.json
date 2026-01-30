@@ -1,0 +1,473 @@
+{
+  "info": {
+    "_postman_id": "caseflow-api-collection",
+    "name": "CaseFlow API",
+    "description": "REST API for the CaseFlow application - CSV import, validation, and case management.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "noauth"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000/api",
+      "type": "string"
+    },
+    {
+      "key": "testEmail",
+      "value": "test@example.com",
+      "type": "string"
+    },
+    {
+      "key": "testPassword",
+      "value": "TestPassword123",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\",\n  \"name\": \"Test User\",\n  \"role\": \"OPERATOR\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Register a new user account"
+          },
+          "response": []
+        },
+        {
+          "name": "Login (NextAuth)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{testEmail}}\",\n  \"password\": \"{{testPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/callback/credentials",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "callback",
+                "credentials"
+              ]
+            },
+            "description": "Login via NextAuth credentials provider"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Cases",
+      "item": [
+        {
+          "name": "List Cases",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cases?limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cases"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "cursor",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "PENDING",
+                  "disabled": true
+                },
+                {
+                  "key": "category",
+                  "value": "TAX",
+                  "disabled": true
+                },
+                {
+                  "key": "priority",
+                  "value": "HIGH",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "dateFrom",
+                  "value": "2024-01-01",
+                  "disabled": true
+                },
+                {
+                  "key": "dateTo",
+                  "value": "2024-12-31",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "List cases with cursor-based pagination and optional filters"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Case",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"caseId\": \"C-1001\",\n  \"applicantName\": \"Asha Verma\",\n  \"dob\": \"1990-03-14\",\n  \"email\": \"asha.verma@example.com\",\n  \"phone\": \"+919876543210\",\n  \"category\": \"TAX\",\n  \"priority\": \"HIGH\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cases",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cases"
+              ]
+            },
+            "description": "Create a single case"
+          },
+          "response": []
+        },
+        {
+          "name": "Batch Create Cases",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cases\": [\n    {\n      \"caseId\": \"C-2001\",\n      \"applicantName\": \"Rahul Sharma\",\n      \"dob\": \"1985-07-22\",\n      \"email\": \"rahul.sharma@example.com\",\n      \"phone\": \"+919988776655\",\n      \"category\": \"LICENSE\",\n      \"priority\": \"MEDIUM\"\n    },\n    {\n      \"caseId\": \"C-2002\",\n      \"applicantName\": \"Priya Patel\",\n      \"dob\": \"1992-11-08\",\n      \"email\": \"priya.patel@example.com\",\n      \"phone\": \"+919123456789\",\n      \"category\": \"PERMIT\",\n      \"priority\": \"LOW\"\n    }\n  ],\n  \"importId\": \"optional-import-id\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cases/batch",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cases",
+                "batch"
+              ]
+            },
+            "description": "Batch create up to 100 cases at once"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Case Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cases/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cases",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "case-id-here"
+                }
+              ]
+            },
+            "description": "Get case details with history and notes"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Case",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"IN_PROGRESS\",\n  \"priority\": \"HIGH\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cases/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cases",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "case-id-here"
+                }
+              ]
+            },
+            "description": "Update case fields"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Case (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cases/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cases",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "case-id-here"
+                }
+              ]
+            },
+            "description": "Delete a case (requires ADMIN role)"
+          },
+          "response": []
+        },
+        {
+          "name": "Add Case Note",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"This is a note about the case progress.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cases/:id/notes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cases",
+                ":id",
+                "notes"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "case-id-here"
+                }
+              ]
+            },
+            "description": "Add a note to a case"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Imports",
+      "item": [
+        {
+          "name": "List Imports",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/imports?limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "imports"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "cursor",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "List all imports for the current user"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Import Record",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filename\": \"sample-cases.csv\",\n  \"totalRows\": 100\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/imports",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "imports"
+              ]
+            },
+            "description": "Create an import record before batch submission"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Import Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/imports/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "imports",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "import-id-here"
+                }
+              ]
+            },
+            "description": "Get import details with statistics"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Import Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"COMPLETED\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/imports/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "imports",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "import-id-here"
+                }
+              ]
+            },
+            "description": "Update import status after batch processing"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "Check if the API is running"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

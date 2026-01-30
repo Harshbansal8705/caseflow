@@ -1,0 +1,11 @@
+case_id,applicant_name,dob,email,phone,category,priority
+C-1001,Asha Verma,1990-03-14,asha.verma@example.com,+919876543210,TAX,HIGH
+C-1002,Rahul Sharma,1985-07-22,rahul.sharma@example.com,+919988776655,LICENSE,MEDIUM
+C-1003,Priya Patel,1992-11-08,priya.patel@example.com,+919123456789,PERMIT,LOW
+C-1004,Arun Kumar,1988-04-15,arun.kumar@example.com,+918877665544,TAX,HIGH
+C-1005,Sneha Gupta,1995-09-30,sneha.gupta@example.com,+917766554433,LICENSE,MEDIUM
+C-1006,Vikram Singh,1983-12-25,vikram.singh@example.com,+916655443322,PERMIT,LOW
+C-1007,Meera Reddy,1990-06-12,meera.reddy@example.com,+915544332211,TAX,HIGH
+C-1008,Kiran Joshi,1987-02-28,kiran.joshi@example.com,+914433221100,LICENSE,MEDIUM
+C-1009,Anita Desai,1993-08-17,anita.desai@example.com,+913322110099,PERMIT,LOW
+C-1010,Suresh Nair,1980-01-05,suresh.nair@example.com,+912211009988,TAX,HIGH

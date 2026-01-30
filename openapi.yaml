@@ -1,0 +1,739 @@
+openapi: 3.0.3
+info:
+  title: CaseFlow API
+  description: |
+    REST API for the CaseFlow application - a production-ready web app for 
+    operations teams to upload CSV files, validate/clean data, and bulk-create cases.
+  version: 1.0.0
+  contact:
+    email: hiring@skycladventures.com
+
+servers:
+  - url: http://localhost:3000/api
+    description: Local development server
+  - url: https://your-deployment-url.com/api
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: User authentication and registration
+  - name: Cases
+    description: Case management endpoints
+  - name: Imports
+    description: CSV import management
+  - name: Health
+    description: Health check endpoint
+
+paths:
+  /auth/register:
+    post:
+      summary: Register new user
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: User already exists
+
+  /auth/signin:
+    post:
+      summary: Sign in user
+      description: Uses NextAuth.js credentials provider
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+        "401":
+          description: Invalid credentials
+
+  /cases:
+    get:
+      summary: List cases with pagination
+      tags: [Cases]
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          description: Cursor for pagination
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/CaseStatus"
+        - name: category
+          in: query
+          schema:
+            $ref: "#/components/schemas/Category"
+        - name: priority
+          in: query
+          schema:
+            $ref: "#/components/schemas/Priority"
+        - name: dateFrom
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: dateTo
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search by applicant name or case ID
+      responses:
+        "200":
+          description: List of cases
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaseListResponse"
+        "401":
+          description: Unauthorized
+
+    post:
+      summary: Create single case
+      tags: [Cases]
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CaseInput"
+      responses:
+        "201":
+          description: Case created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaseResponse"
+        "400":
+          description: Validation error
+        "401":
+          description: Unauthorized
+        "409":
+          description: Case ID already exists
+
+  /cases/batch:
+    post:
+      summary: Batch create cases
+      description: Create multiple cases at once (max 100 per batch)
+      tags: [Cases]
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchCaseInput"
+      responses:
+        "200":
+          description: Batch results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchResultResponse"
+        "400":
+          description: Validation error
+        "401":
+          description: Unauthorized
+
+  /cases/{id}:
+    get:
+      summary: Get case details
+      tags: [Cases]
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Case details with history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaseDetailResponse"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Case not found
+
+    patch:
+      summary: Update case
+      tags: [Cases]
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CaseUpdateInput"
+      responses:
+        "200":
+          description: Case updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaseResponse"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Case not found
+
+    delete:
+      summary: Delete case (Admin only)
+      tags: [Cases]
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Case deleted
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden - Admin access required
+        "404":
+          description: Case not found
+
+  /cases/{id}/notes:
+    post:
+      summary: Add note to case
+      tags: [Cases]
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NoteInput"
+      responses:
+        "201":
+          description: Note added
+        "401":
+          description: Unauthorized
+        "404":
+          description: Case not found
+
+  /imports:
+    get:
+      summary: List imports
+      tags: [Imports]
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: List of imports
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportListResponse"
+        "401":
+          description: Unauthorized
+
+    post:
+      summary: Create import record
+      tags: [Imports]
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportCreateInput"
+      responses:
+        "201":
+          description: Import record created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportResponse"
+        "401":
+          description: Unauthorized
+
+  /imports/{id}:
+    get:
+      summary: Get import details
+      tags: [Imports]
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Import details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportDetailResponse"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Import not found
+
+    patch:
+      summary: Update import status
+      tags: [Imports]
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportUpdateInput"
+      responses:
+        "200":
+          description: Import updated
+        "401":
+          description: Unauthorized
+        "404":
+          description: Import not found
+
+  /health:
+    get:
+      summary: Health check
+      tags: [Health]
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  timestamp:
+                    type: string
+                    format: date-time
+
+components:
+  securitySchemes:
+    sessionAuth:
+      type: apiKey
+      in: cookie
+      name: next-auth.session-token
+      description: NextAuth.js session cookie
+
+  schemas:
+    Role:
+      type: string
+      enum: [ADMIN, OPERATOR]
+
+    Category:
+      type: string
+      enum: [TAX, LICENSE, PERMIT]
+
+    Priority:
+      type: string
+      enum: [LOW, MEDIUM, HIGH]
+
+    CaseStatus:
+      type: string
+      enum: [PENDING, IN_PROGRESS, COMPLETED, REJECTED]
+
+    ImportStatus:
+      type: string
+      enum: [PROCESSING, COMPLETED, FAILED]
+
+    RegisterRequest:
+      type: object
+      required: [email, password, name]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+          description: Must contain uppercase, lowercase, and number
+        name:
+          type: string
+          maxLength: 255
+        role:
+          $ref: "#/components/schemas/Role"
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        role:
+          $ref: "#/components/schemas/Role"
+        createdAt:
+          type: string
+          format: date-time
+
+    CaseInput:
+      type: object
+      required: [caseId, applicantName, dob, category]
+      properties:
+        caseId:
+          type: string
+          pattern: ^[A-Za-z0-9-]+$
+        applicantName:
+          type: string
+          maxLength: 255
+        dob:
+          type: string
+          format: date
+          description: ISO date between 1900 and today
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+          description: E.164 format (auto-normalized)
+        category:
+          $ref: "#/components/schemas/Category"
+        priority:
+          $ref: "#/components/schemas/Priority"
+          default: LOW
+
+    CaseUpdateInput:
+      type: object
+      properties:
+        applicantName:
+          type: string
+        dob:
+          type: string
+          format: date
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        category:
+          $ref: "#/components/schemas/Category"
+        priority:
+          $ref: "#/components/schemas/Priority"
+        status:
+          $ref: "#/components/schemas/CaseStatus"
+
+    BatchCaseInput:
+      type: object
+      required: [cases]
+      properties:
+        cases:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: "#/components/schemas/CaseInput"
+        importId:
+          type: string
+
+    NoteInput:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 5000
+
+    CaseResponse:
+      type: object
+      properties:
+        case:
+          $ref: "#/components/schemas/Case"
+
+    Case:
+      type: object
+      properties:
+        id:
+          type: string
+        caseId:
+          type: string
+        applicantName:
+          type: string
+        dob:
+          type: string
+          format: date-time
+        email:
+          type: string
+        phone:
+          type: string
+        category:
+          $ref: "#/components/schemas/Category"
+        priority:
+          $ref: "#/components/schemas/Priority"
+        status:
+          $ref: "#/components/schemas/CaseStatus"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CaseListResponse:
+      type: object
+      properties:
+        cases:
+          type: array
+          items:
+            $ref: "#/components/schemas/Case"
+        nextCursor:
+          type: string
+        hasMore:
+          type: boolean
+
+    CaseDetailResponse:
+      type: object
+      properties:
+        case:
+          allOf:
+            - $ref: "#/components/schemas/Case"
+            - type: object
+              properties:
+                history:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/CaseHistory"
+                notes:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/CaseNote"
+
+    CaseHistory:
+      type: object
+      properties:
+        id:
+          type: string
+        action:
+          type: string
+        changes:
+          type: object
+        createdAt:
+          type: string
+          format: date-time
+        user:
+          $ref: "#/components/schemas/UserSummary"
+
+    CaseNote:
+      type: object
+      properties:
+        id:
+          type: string
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        user:
+          $ref: "#/components/schemas/UserSummary"
+
+    UserSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+
+    BatchResultResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              success:
+                type: boolean
+              caseId:
+                type: string
+              id:
+                type: string
+              error:
+                type: string
+        summary:
+          type: object
+          properties:
+            total:
+              type: integer
+            success:
+              type: integer
+            failed:
+              type: integer
+
+    ImportCreateInput:
+      type: object
+      required: [filename, totalRows]
+      properties:
+        filename:
+          type: string
+        totalRows:
+          type: integer
+          minimum: 1
+
+    ImportUpdateInput:
+      type: object
+      properties:
+        status:
+          $ref: "#/components/schemas/ImportStatus"
+        successCount:
+          type: integer
+        failureCount:
+          type: integer
+        errorDetails:
+          type: object
+
+    ImportResponse:
+      type: object
+      properties:
+        import:
+          $ref: "#/components/schemas/Import"
+
+    Import:
+      type: object
+      properties:
+        id:
+          type: string
+        filename:
+          type: string
+        totalRows:
+          type: integer
+        successCount:
+          type: integer
+        failureCount:
+          type: integer
+        status:
+          $ref: "#/components/schemas/ImportStatus"
+        createdAt:
+          type: string
+          format: date-time
+
+    ImportListResponse:
+      type: object
+      properties:
+        imports:
+          type: array
+          items:
+            $ref: "#/components/schemas/Import"
+        nextCursor:
+          type: string
+        hasMore:
+          type: boolean
+
+    ImportDetailResponse:
+      type: object
+      properties:
+        import:
+          allOf:
+            - $ref: "#/components/schemas/Import"
+            - type: object
+              properties:
+                errorDetails:
+                  type: object
+                cases:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/Case"
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        details:
+          type: object

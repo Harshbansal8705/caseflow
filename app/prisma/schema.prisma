@@ -1,0 +1,145 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      Role     @default(OPERATOR)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cases      Case[]
+  imports    Import[]
+  auditLogs  AuditLog[]
+  caseHistories CaseHistory[]
+  caseNotes  CaseNote[]
+}
+
+enum Role {
+  ADMIN
+  OPERATOR
+}
+
+model Case {
+  id            String     @id @default(cuid())
+  caseId        String     @unique // Business ID from CSV (e.g., "C-1001")
+  applicantName String
+  dob           DateTime
+  email         String?
+  phone         String?
+  category      Category
+  priority      Priority   @default(LOW)
+  status        CaseStatus @default(PENDING)
+
+  createdById   String
+  createdBy     User       @relation(fields: [createdById], references: [id])
+  importId      String?
+  import        Import?    @relation(fields: [importId], references: [id])
+
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  history       CaseHistory[]
+  notes         CaseNote[]
+
+  @@index([status])
+  @@index([category])
+  @@index([priority])
+  @@index([createdAt])
+  @@index([createdById])
+}
+
+enum Category {
+  TAX
+  LICENSE
+  PERMIT
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum CaseStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  REJECTED
+}
+
+model Import {
+  id           String       @id @default(cuid())
+  filename     String
+  totalRows    Int
+  successCount Int          @default(0)
+  failureCount Int          @default(0)
+  status       ImportStatus @default(PROCESSING)
+  errorDetails Json?
+
+  userId       String
+  user         User         @relation(fields: [userId], references: [id])
+
+  createdAt    DateTime     @default(now())
+
+  cases        Case[]
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+enum ImportStatus {
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model CaseHistory {
+  id        String   @id @default(cuid())
+  caseId    String
+  case      Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  action    String   // "CREATED", "UPDATED", "STATUS_CHANGED"
+  changes   Json     // { field: { from: old, to: new } }
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@index([caseId])
+  @@index([createdAt])
+}
+
+model CaseNote {
+  id        String   @id @default(cuid())
+  caseId    String
+  case      Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  content   String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([caseId])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  action     String   // "USER_LOGIN", "IMPORT_STARTED", "CASE_CREATED", etc.
+  entityType String   // "User", "Case", "Import"
+  entityId   String
+  metadata   Json?
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([createdAt])
+}
